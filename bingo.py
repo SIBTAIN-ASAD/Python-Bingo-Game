@@ -27,31 +27,23 @@ pattern of unque items
 ===================================================================
 """
 def initialtePlayers(list_items):
+    items = list(dict.fromkeys(list_items))
+    if len(items) < 25:
+        raise ValueError("At least 25 distinct items are required for a Bingo card.")
     dic = {}
     num = input("How many players want to play game: ")
     
     while(num.isdigit() == False or int(num) <= 0 or int(num) > 5):
-        num = input("Please enter a valid number (1 - 3): ")
+        num = input("Please enter a valid number (1 - 5): ")
     
     for i in range(int(num)):
         name = input(f"Enter the name of player {i+1}: ")
         while name in dic:
             name = input(f"Name is Already in game. Plese enter the unique name of player {i+1}: ")
         
-        ls = []
-        ls2 = []
-        k = 0
-        while(k < 25):
-            idx = random.randrange(len(list_items))
-            ran = list_items[idx]
-            if ran not in ls2:           
-                ls2.append(ran)
-                k += 1
-            if k%5 == 0:
-                ls.append(ls2)
-                ls2 = [] 
-        dic[name] = ls
-                    
+        selected = random.sample(items, 25)
+        dic[name] = [selected[index:index + 5] for index in range(0, 25, 5)]
+
     return dic
 
 """
@@ -99,62 +91,10 @@ This Function is used to check winner on the Single Line mode
 ===================================================================
 """
 def isSingleLineWinner(dic, name):
-    # checking left diagonal
-    ls = []
-    check = True
-    for i in range(5):
-        for j in range(5):
-            if i == j:
-                ls.append(dic[name][i][j])
-    for i in ls:
-        if i != "FOUND":
-            check = False
-    if check == True:
-        return True
-
-
-    # checking right diagonal
-    ls = []
-    check = True
-    for i in range(5):
-        for j in range(5):
-            if i != j and i+j == 4:
-                ls.append(dic[name][i][j])
-    for i in ls:
-        if i != "FOUND":
-            check = False
-    if check == True:
-        return True
-
-    # checking rows
-    for k in range(5):
-        ls = []
-        check = True
-        for i in range(5):
-            for j in range(5):
-                if i == k:
-                    ls.append(dic[name][i][j])
-        for i in ls:
-            if i != "FOUND":
-                check = False
-        if check == True:
-            return True
-
-    # checking columns
-    for k in range(5):
-        ls = []
-        check = True
-        for i in range(5):
-            for j in range(5):
-                if j == k:
-                    ls.append(dic[name][i][j])
-        for i in ls:
-            if i != "FOUND":
-                check = False
-        if check == True:
-            return True
-
-    return False
+    card = dic[name]
+    lines = list(card) + [list(column) for column in zip(*card)]
+    lines += [[card[i][i] for i in range(5)], [card[i][4 - i] for i in range(5)]]
+    return any(all(item == "FOUND" for item in line) for line in lines)
 
 
 """
@@ -163,22 +103,9 @@ This Function is used to check winner on the Four Corner mode
 ===================================================================
 """
 def isFourCornersWinner(dic, name):
-    ls = []
-    for j in range(5):
-        ls.append(dic[name][0][j])
-    for j in range(5):
-        ls.append(dic[name][4][j])
-    for i in range(5):
-        ls.append(dic[name][i][0])
-    for i in range(5):
-        ls.append(dic[name][i][4])
-
-    for i in ls:
-        if i != "FOUND":
-            return False
-    return True
-
-    
+    card = dic[name]
+    return all(card[row][column] == "FOUND" for row, column in
+               ((0, 0), (0, 4), (4, 0), (4, 4)))
 
 
 """
@@ -196,7 +123,7 @@ def checkWinner(inp, dic, name):
     elif inp == 3:
         return isFourCornersWinner(dic, name)
     else:
-        False
+        return False
 
 """
 ===================================================================
@@ -205,7 +132,7 @@ This Function is used to get mode entered by the player
 """
 def getGameMod():
     print("\nPress 1 for Full Card (all items on the card must be FOUND)")
-    print("Press 2 for Single Line (all items in a single horizontal or vertical line must be marked as FOUND)")
+    print("Press 2 for Single Line (all items in a single horizontal, vertical, or diagonal line must be marked as FOUND)")
     print("Press 3 for Four Corners (the items in each of the four corners of the card must be FOUND) ")
     inp = input()
     if inp == "1":
@@ -225,13 +152,12 @@ This Function is used to get a new random item for the caller
 ===================================================================
 """
 def getNewItemForCaller(list_items, list_caller):
-    k = 0
-    while(k < 300):
-        idx = random.randrange(len(list_items))
-        ran = list_items[idx]
-        if ran not in list_caller:           
-            list_caller.append(ran)
-            return list_caller
+    called = set(list_caller)
+    remaining = [item for item in dict.fromkeys(list_items) if item not in called]
+    if not remaining:
+        raise ValueError("All items have already been called.")
+    list_caller.append(random.choice(remaining))
+    return list_caller
 
 
 """
